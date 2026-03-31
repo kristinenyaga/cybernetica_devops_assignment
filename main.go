@@ -6,13 +6,27 @@ import (
 	"time"
 	"log"
 )
+type statusRecorder struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (r *statusRecorder) WriteHeader(code int) {
+	r.statusCode = code
+	r.ResponseWriter.WriteHeader(code)
+}
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()                      
-		next.ServeHTTP(w, r)                      
+		rec := &statusRecorder{
+			ResponseWriter: w,
+			statusCode: http.StatusOK,
+		}
+
+		next.ServeHTTP(rec, r)                      
 		duration := time.Since(start)             
-		log.Printf("%s %s %v", r.Method, r.URL.Path, duration) 
+		log.Printf("%s %s %d %v", r.Method, r.URL.Path, rec.statusCode, duration) 
 	})
 }
 
