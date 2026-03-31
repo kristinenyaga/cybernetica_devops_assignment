@@ -3,7 +3,18 @@ package main
 import (
 	"net/http"
 	"os"
+	"time"
+	"log"
 )
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()                      
+		next.ServeHTTP(w, r)                      
+		duration := time.Since(start)             
+		log.Printf("%s %s %v", r.Method, r.URL.Path, duration) 
+	})
+}
 
 func main() {
 	port := os.Getenv("PORT")
@@ -21,20 +32,20 @@ func main() {
 		allowOrigin = "*"
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/", loggingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", allowOrigin)
 		w.Write([]byte(responseMessage))
-	})
+	})))
 
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/health", loggingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
-	})
+	})))
 
-	http.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/ready", loggingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ready"))
-	})
+	})))
 
 
 	http.ListenAndServe(":"+port, nil)
