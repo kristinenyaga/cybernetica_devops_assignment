@@ -58,6 +58,8 @@ func loggingMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
+	log.SetFlags(0)
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8000"
