@@ -1,10 +1,13 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"time"
-	"log"
+	"context"
+	"os/signal"
+	"syscall"
 )
 var (
 	allowOrigin     string
@@ -81,5 +84,34 @@ func main() {
 
 	loggedMux := loggingMiddleware(mux)
 	
-	log.Fatal(http.ListenAndServe(":"+port, loggedMux))
+	server := &http.Server{
+		Addr:    ":" + port,
+		Handler: loggedMux,
+	}
+
+	// Starting server in a goroutine
+	go func() {
+		log.Printf("Server is starting on port %s", port)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("ListenAndServe(): %v", err)
+		}
+	}()
+
+	// Creating a channel to listen for OS signals
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit // blocks here until signal arrives
+
+	log.Println("Shutdown requested, shutting down server...")
+
+	// Context with timeout for graceful shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	log.Println("Server gracefully shut down")
+	
 }
