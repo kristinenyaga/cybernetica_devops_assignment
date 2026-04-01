@@ -46,7 +46,14 @@ func loggingMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(rec, r)                      
 		duration := time.Since(start)             
-		log.Printf("%s %s %d %v", r.Method, r.URL.Path, rec.statusCode, duration) 
+		log.Printf(
+		`{"time":"%s","method":"%s","path":"%s","status":%d,"duration":"%s"}`,
+		time.Now().Format(time.RFC3339),
+		r.Method,
+		r.URL.Path,
+		rec.statusCode,
+		duration,
+		) 
 	})
 }
 
