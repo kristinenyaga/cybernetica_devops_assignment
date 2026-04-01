@@ -63,12 +63,14 @@ func main() {
 	if allowOrigin == "" {
 		allowOrigin = "*"
 	}
-
 	
-	http.Handle("/", loggingMiddleware(http.HandlerFunc(homeHandler)))
-	http.Handle("/health", loggingMiddleware(http.HandlerFunc(healthHandler)))
-	http.Handle("/ready", loggingMiddleware(http.HandlerFunc(readyHandler)))
+	mux := http.NewServeMux()
 
+	mux.HandleFunc("/", homeHandler)
+	mux.HandleFunc("/health", healthHandler)
+	mux.HandleFunc("/ready", readyHandler)
 
-	http.ListenAndServe(":"+port, nil)
+	loggedMux := loggingMiddleware(mux)
+	
+	log.Fatal(http.ListenAndServe(":"+port, loggedMux))
 }
