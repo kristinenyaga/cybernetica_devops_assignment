@@ -6,6 +6,26 @@ import (
 	"time"
 	"log"
 )
+var (
+	allowOrigin     string
+	responseMessage string
+)
+
+func homeHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", allowOrigin)
+	w.Write([]byte(responseMessage))
+}
+
+func healthHandler(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("ok"))
+}
+
+func readyHandler(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("ready"))
+}
+
 type statusRecorder struct {
 	http.ResponseWriter
 	statusCode int
@@ -35,31 +55,19 @@ func main() {
 	if port == "" {
 		port = "8000"
 	}
-
-	responseMessage := os.Getenv("RESPONSE_MESSAGE")
+	responseMessage = os.Getenv("RESPONSE_MESSAGE")
 	if responseMessage == "" {
 		responseMessage = "Service request succeeded!"
 	}
-
-	allowOrigin := os.Getenv("ALLOW_ORIGIN")
+	allowOrigin = os.Getenv("ALLOW_ORIGIN")
 	if allowOrigin == "" {
 		allowOrigin = "*"
 	}
 
-	http.Handle("/", loggingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", allowOrigin)
-		w.Write([]byte(responseMessage))
-	})))
-
-	http.Handle("/health", loggingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
-	})))
-
-	http.Handle("/ready", loggingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ready"))
-	})))
+	
+	http.Handle("/", loggingMiddleware(http.HandlerFunc(homeHandler)))
+	http.Handle("/health", loggingMiddleware(http.HandlerFunc(healthHandler)))
+	http.Handle("/ready", loggingMiddleware(http.HandlerFunc(readyHandler)))
 
 
 	http.ListenAndServe(":"+port, nil)
