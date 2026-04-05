@@ -6,7 +6,7 @@ COPY . .
 
 RUN go build -o server main.go
 
-FROM alpine:latest
+FROM alpine:3.20
 
 RUN adduser -D -g '' appuser
 USER appuser
